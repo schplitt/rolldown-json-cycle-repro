@@ -1,0 +1,11 @@
+{
+  "name": "rolldown-json-cycle-repro",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "repro": "node build.mjs && node out/bundle.mjs"
+  },
+  "devDependencies": {
+    "rolldown": "1.2.11"
+  }
+}
