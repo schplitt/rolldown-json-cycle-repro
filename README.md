@@ -1,4 +1,4 @@
-# rolldown: JSON module in a cycle is evaluated too early
+# rolldown: a JSON module inside a cycle is evaluated before the `init_*` wrapper it needs is assigned
 
 ```
 npm install
@@ -15,13 +15,13 @@ Actual:
 
 ```
 out/bundle.mjs:26
-    await init_entry();
-          ^
-TypeError: init_entry is not a function
+    init_app();
+    ^
+TypeError: init_app is not a function
 ```
 
-Four files. `entry.mjs` imports `h1.mjs`, which imports `entry.mjs` back (a cycle), and `entry.mjs` also loads `lazy.mjs` with a dynamic `import()`. Both `entry.mjs` and `lazy.mjs` import `info.json`. Bundled with `codeSplitting: false`.
+Five files, bundled with `codeSplitting: false`, nothing else set. `app.mjs` imports `h1.mjs`, which imports `app.mjs` back (a cycle), and `app.mjs` loads `lazy.mjs` with a dynamic `import()`. Both `app.mjs` and `lazy.mjs` import `info.json`. No top-level await anywhere.
 
-Every module gets a lazy `__esmMin` initializer, except the JSON module, which is written out as plain top-level code. In front of it the bundle runs an immediately-invoked block that evaluates `h1.mjs`, and that block calls `init_entry()`, which is a `var` assigned further down. So it is still `undefined` at that point.
+Every module in the cycle gets a lazy `__esmMin` initializer, and the entry calls `init_app()` last, which would order everything correctly. The JSON module is the exception: it is written out as plain top-level code, and in front of it the bundle runs an immediately-invoked block that evaluates `h1.mjs`. That block calls `init_app()`, which is a `var` assigned further down, so it is still `undefined`.
 
-Either of these makes it work: `codeSplitting: true`, or replacing `info.json` with a JS module exporting the same value.
+Either of these makes the same graph work: `codeSplitting: true`, or replacing `info.json` with a JS module exporting the same value.
